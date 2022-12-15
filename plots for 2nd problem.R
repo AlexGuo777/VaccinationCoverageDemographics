@@ -16,5 +16,9 @@ coverage_rate <- read.csv("./data/clean/us_by_year.csv")
 coverage_rate <- rename(coverage_rate, estimation='Estimate....')
 coverage_rate$ym <- as.Date(coverage_rate$ym, format = "%m/%d/%Y")
 ggplot(coverage_rate, aes(ym, estimation)) + 
+<<<<<<< HEAD
   geom_smooth(method = "loess", span = .05, se = FALSE)
 
+=======
+  geom_smooth(method = "loess", span = .05, se = FALSE)
+>>>>>>> af8595312f39b806d04b0b8661bd3c04fb85ba0d

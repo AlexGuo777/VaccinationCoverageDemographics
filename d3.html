@@ -3,158 +3,135 @@
 
 <head>
 	<meta charset="utf-8">
-	<title>D3 Component - Interactive Choropleth</title>
+	<title>D3 Component - Interactive Scatterplot</title>
 	<script src="https://d3js.org/d3.v7.js"></script>
-
-	<!-- <style type="text/css">
-		h1 {
-			color: red;
-		}
-
-		/* CSS styling */
-		p {
-			color: blue;
-		}
-	</style> -->
-
 </head>
 
 <body>
-	<!-- <h1>h1 header</h1>
-	<h2>h2 header</h2>
-	<h3 style="font-family: Palatino;">h3 header</h3>
-	<p>paragraph</p>
-
-	<svg width="500" height="300">
-		<rect x="20" y="20" width="460" height="260" fill="lightblue"></rect>
-		<circle cx="50" cy="75" r="20" fill="blue"></circle>
-		<ellipse cx="175" cy="100" rx="45" ry="30" fill="green"></ellipse>
-		<text x="150" y="200">(150, 200)</text>
-		<line x1="250" y1="150" x2="300" y2="200" stroke="red" stroke-width="5"></line>
-	</svg> -->
-
-	<h1>D3 Component</h1>
-
-	<div id="my_dataviz"></div>
+	<h1>D3 Component - Interactive Scatterplot</h1>
+	<p>Instructions: Hover over a point to highlight its regional group. Click a point to display the state it
+		represents. Refresh the page to clear all state labels.</p>
+	<h3>Flu Shot Coverage Rate vs High School Education Ratio</h3>
+	<div id="scatterplot"></div>
 
 	<script>
-
-
 		// set the dimensions and margins of the graph
-		const margin = { top: 30, right: 10, bottom: 10, left: 0 },
-			width = 1000 - margin.left - margin.right,
-			height = 400 - margin.top - margin.bottom;
+		const margin = { top: 30, right: 30, bottom: 100, left: 60 },
+			width = 560 - margin.left - margin.right,
+			height = 500 - margin.top - margin.bottom;
 
-		// append the svg object to the body of the page
-		const svg = d3.select("#my_dataviz")
+		// append the SVG object
+		const svg = d3.select("#scatterplot")
 			.append("svg")
 			.attr("width", width + margin.left + margin.right)
 			.attr("height", height + margin.top + margin.bottom)
 			.append("g")
-			.attr("transform",
-				`translate(${margin.left},${margin.top})`);
+			.attr("transform", `translate(${margin.left},${margin.top})`);
 
-		// Parse the Data
-		d3.csv("data/clean/demo_df.csv").then(function (data) {
-			console.log(data)
-			// Extract the list of dimensions we want to keep in the plot. Here I keep all except the column called Species
-			dimensions = Object.keys(data[0]).filter(function (d) {
-				if (d == "tot_pop" || d == "flu_shot_coverage_2021" || d == "high_school_education_ratio" || d == "household_poverty_rate" ||
-					d == "median_household_income") {
-					return d;
-				}
-			})
+		// append legend
+		svg.append("circle").attr("cy", 0).attr("cx", 40).attr("r", 6).style("fill", "#bebada")
+		svg.append("circle").attr("cy", 0).attr("cx", 140).attr("r", 6).style("fill", "#fb8072")
+		svg.append("circle").attr("cy", 0).attr("cx", 240).attr("r", 6).style("fill", "#80b1d3")
+		svg.append("circle").attr("cy", 0).attr("cx", 340).attr("r", 6).style("fill", "#fdb462")
 
-			// For each dimension, I build a linear scale. I store all in a y object
-			const y = {}
-			for (i in dimensions) {
-				name = dimensions[i]
-				y[name] = d3.scaleLinear()
-					.domain(d3.extent(data, function (d) { return +d[name]; }))
-					.range([height, 0])
+		svg.append("text").attr("y", 0).attr("x", 50).text("West").style("font-size", "15px").attr("alignment-baseline", "middle")
+		svg.append("text").attr("y", 0).attr("x", 150).text("South").style("font-size", "15px").attr("alignment-baseline", "middle")
+		svg.append("text").attr("y", 0).attr("x", 250).text("Northeast").style("font-size", "15px").attr("alignment-baseline", "middle")
+		svg.append("text").attr("y", 0).attr("x", 350).text("Midwest").style("font-size", "15px").attr("alignment-baseline", "middle")
+
+		// import data
+		d3.csv("data/clean/demo_df_d3.csv").then(function (data) {
+
+			// add x axis
+			const x = d3.scaleLinear()
+				.domain([36, 66])
+				.range([0, width]);
+			svg.append("g")
+				.attr("transform", `translate(0, ${height})`)
+				.call(d3.axisBottom(x));
+
+			// add y axis
+			const y = d3.scaleLinear()
+				.domain([0.80, 1])
+				.range([height, 0]);
+			svg.append("g")
+				.call(d3.axisLeft(y));
+
+			// color scale to define region group colors
+			const color = d3.scaleOrdinal()
+				.domain(["West", "South", "Northeast", "Midwest"])
+				.range(["#bebada", "#fb8072", "#80b1d3", "#fdb462"])
+
+			// region group highlight function 
+			const highlight = function (event, d) {
+				selected_region = d.region
+				d3.selectAll(".dot")
+					.transition()
+					.duration(200)
+					.style("fill", "lightgrey")
+					.attr("r", 3)
+				d3.selectAll("." + selected_region)
+					.transition()
+					.duration(200)
+					.style("fill", color(selected_region))
+					.attr("r", 7)
 			}
 
-			// Build the X scale -> it find the best position for each Y axis
-			x = d3.scalePoint()
-				.range([0, width])
-				.padding(1)
-				.domain(dimensions);
-
-			// The path function take a row of the csv as input, and return x and y coordinates of the line to draw for this raw.
-			function path(d) {
-				return d3.line()(dimensions.map(function (p) { return [x(p), y[p](d[p])]; }));
+			const noHighlight = function (event, d) {
+				d3.selectAll(".dot")
+					.transition()
+					.duration(200)
+					.style("fill", d => color(d.region))
+					.attr("r", 5)
 			}
 
-			// Draw the lines
-			svg
-				.selectAll("myPath")
-				.data(data)
-				.join("path")
-				.attr("d", path)
-				.style("fill", "none")
-				.style("stroke", "#69b3a2")
-				.style("opacity", 0.5)
-
-
-			// create a tooltip
-			var Tooltip = d3.select("#my_dataviz")
-				.append("div")
-				.style("opacity", 0)
-				.attr("class", "tooltip")
-				.style("background-color", "white")
-				.style("border", "solid")
-				.style("border-width", "2px")
-				.style("border-radius", "5px")
-				.style("padding", "5px")
-
-			// Three function that change the tooltip when user hover / move / leave a cell
-			var mouseover = function (d) {
-				Tooltip
-					.style("opacity", 1)
-				d3.select(this)
-					.style("stroke", "black")
-					.style("opacity", 1)
-			}
-			var mousemove = function (d) {
-				Tooltip
-					.html("The exact value of<br>this cell is: " + d.value)
-					.style("left", (d3.pointer(this)[0] + 70) + "px")
-					.style("top", (d3.pointer(this)[1]) + "px")
-			}
-			var mouseleave = function (d) {
-				Tooltip
-					.style("opacity", 0)
-				d3.select(this)
-					.style("stroke", "none")
-					.style("opacity", 0.8)
-			}
-
-			// Draw the axis:
-			svg.selectAll("myAxis")
-				// For each dimension of the dataset I add a 'g' element:
-				.data(dimensions).enter()
-				.append("g")
-				// I translate this element to its right position on the x axis
-				.attr("transform", function (d) { return "translate(" + x(d) + ")"; })
-				// And I build the axis with the call function
-				.each(function (d) { d3.select(this).call(d3.axisLeft().scale(y[d])); })
-				// Add axis title
+			// add tooltip
+			const tooltip = svg
 				.append("text")
+				.attr("x", 10)
+				.attr("y", 10)
+				.style("visibility", "hidden")
+				;
+
+			// add points and define hover/click options
+			svg.append('g')
+				.selectAll("dot")
+				.data(data)
+				.enter()
+				.append("circle")
+				.attr("class", function (d) { return "dot " + d.region })
+				.attr("cx", function (d) { return x(d.flu_shot_coverage_2021); })
+				.attr("cy", function (d) { return y(d.high_school_education_ratio); })
+				.attr("r", 5)
+				.style("fill", function (d) { return color(d.region) })
+				.style("pointer-events", "all")
+				.on("mouseover", highlight)
+				.on("mouseleave", noHighlight)
+				.on("click", function (d, i) {
+					tooltip.text(i["state"])
+						.style("visibility", "visible")
+						.attr("x", (d.pageX - 100) + "px")
+						.attr("y", (d.pageY - 225) + "px")
+				})
+
+			// x axis label
+			svg.append("text")
+				.attr("x", width / 2)
+				.attr("y", height + (margin.bottom / 2))
 				.style("text-anchor", "middle")
-				.attr("y", -9)
-				.text(function (d) { return d; })
-				.style("fill", "black")
-				.on("mouseover", mouseover)
-				.on("mousemove", mousemove)
-				.on("mouseleave", mouseleave)
+				.text("Flu Shot Coverage Rate, 2021 (%)");
 
-
+			// y axis label
+			svg.append("text")
+				.attr("transform", "rotate(-90)")
+				.attr("y", 0 - margin.left)
+				.attr("x", 0 - (height / 2))
+				.attr("dy", "1em")
+				.style("text-anchor", "middle")
+				.text("High School Education Ratio");
 
 		})
-
-
 	</script>
-
 </body>
 
 </html>
