@@ -265,7 +265,7 @@ g<-ggplot(new_cases, aes(submission_date, new_covid_case)) +
   geom_smooth(method = "loess", span = .05, se = FALSE)+
   scale_x_date(limits = c(as.Date("2018-01-01"),as.Date("2021-12-01")))+
   scale_y_continuous(labels = scales::label_number_si())+
-  labs(y="Count", title="Nationalwide New Covid Cases")+
+  labs(y="Count", x="Time", title="Nationwide New Covid Cases")+
   scale_color_colorblind()
   
 coverage_rate <- rename(us_by_year, estimation='Estimate....',record_date='ym')
@@ -287,7 +287,7 @@ coverage_rate$record_date <- as.Date(coverage_rate$record_date)
 h<-ggplot(coverage_rate, aes(record_date, estimation)) + 
   geom_smooth(method = "loess", span = .1, se = FALSE)+
   scale_x_date(limits = c(as.Date("2018-01-01"),as.Date("2021-12-01")))+
-  labs(y="Coverage Rate", title = "Nationalwide Flu Vaccination Coverage Rate (%)")+
+  labs(y="Coverage Rate", x="Time", title = "Nationwide Flu Vaccination Coverage Rate (%)")+
   scale_color_colorblind()
 
 plot_grid(g,h, nrow=2,align = "v")
